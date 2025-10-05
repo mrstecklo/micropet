@@ -9,15 +9,12 @@ import (
 
 func main() {
 	logger := createLogger()
-
-	serveMux := http.NewServeMux()
-	serveMux.Handle("/orders/", httpHandler{logger, handleOrders})
-
+	handler := newHttpHandlerMux(logger)
 	server := http.Server{
 		Addr:         ":8080",
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 90 * time.Second,
-		Handler:      serveMux,
+		Handler:      handler,
 	}
 
 	logger.Info("Starting server")
@@ -32,19 +29,4 @@ func createLogger() *slog.Logger {
 	options := &slog.HandlerOptions{Level: slog.LevelDebug}
 	handler := slog.NewTextHandler(os.Stdout, options)
 	return slog.New(handler)
-}
-
-type handleFunc func(*slog.Logger, http.ResponseWriter, *http.Request)
-
-type httpHandler struct {
-	logger *slog.Logger
-	handle handleFunc
-}
-
-func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
-	h.handle(h.logger, responseWriter, request)
-}
-
-func handleOrders(logger *slog.Logger, responseWriter http.ResponseWriter, request *http.Request) {
-	responseWriter.WriteHeader(http.StatusInternalServerError)
 }
