@@ -9,7 +9,10 @@ import (
 
 func main() {
 	logger := createLogger()
-	handler := newHttpHandlerMux(logger)
+	handler := newHttpHandlerMux(httpHandlerMuxConfig{
+		logger: logger,
+		orders: server{},
+	})
 	server := http.Server{
 		Addr:         ":8080",
 		ReadTimeout:  30 * time.Second,

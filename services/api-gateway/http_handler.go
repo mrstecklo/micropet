@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type server struct {
+	url    string
+	client *http.Client
+}
+
 type httpHandlerMux struct {
 	mux *http.ServeMux
 }
@@ -13,9 +18,14 @@ func (h httpHandlerMux) ServeHTTP(responseWriter http.ResponseWriter, request *h
 	h.mux.ServeHTTP(responseWriter, request)
 }
 
-func newHttpHandlerMux(logger *slog.Logger) httpHandlerMux {
+type httpHandlerMuxConfig struct {
+	logger *slog.Logger
+	orders server
+}
+
+func newHttpHandlerMux(config httpHandlerMuxConfig) httpHandlerMux {
 	mux := http.NewServeMux()
-	mux.Handle("/orders", httpHandler{logger, handleOrders})
+	mux.Handle("/orders", httpHandler{config.logger, handleOrders})
 	return httpHandlerMux{mux}
 }
 
@@ -31,5 +41,5 @@ func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http
 }
 
 func handleOrders(logger *slog.Logger, responseWriter http.ResponseWriter, request *http.Request) {
-	responseWriter.WriteHeader(http.StatusInternalServerError)
+	responseWriter.WriteHeader(http.StatusMethodNotAllowed)
 }
