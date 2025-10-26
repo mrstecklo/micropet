@@ -40,30 +40,42 @@ func setUpHttpHandlerTest(t *testing.T) httpHandlerFixture {
 	}
 }
 
-func TestHttpHandler_GetOrdersNotAllowed(t *testing.T) {
-	f := setUpHttpHandlerTest(t)
-	f.orders.mockHandler.EXPECT().
-		ServeHTTP(gomock.Any(), gomock.Any()).
-		Do(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func TestHttpHandler_ReturnsErrorsFromOrders(t *testing.T) {
+	data := []struct {
+		name   string
+		method string
+		target string
+		code   int
+		body   string
+	}{
+		{
+			"GetMethodNotAllowed",
+			"GET",
+			"/orders",
+			http.StatusMethodNotAllowed,
+			"Method not allowed",
+		},
+		{
+			"GetInternalServerError",
+			"GET",
+			"/orders",
+			http.StatusInternalServerError,
+			"Internal server error",
+		},
+	}
+	for _, d := range data {
+		t.Run(d.name, func(t *testing.T) {
+			f := setUpHttpHandlerTest(t)
+			f.orders.mockHandler.EXPECT().
+				ServeHTTP(gomock.Any(), gomock.Any()).
+				Do(func(w http.ResponseWriter, r *http.Request) {
+					http.Error(w, d.body, d.code)
+				})
+
+			request := httptest.NewRequest(d.method, d.target, nil)
+			f.mux.ServeHTTP(f.responseRecorder, request)
+
+			assert.Equal(t, d.code, f.responseRecorder.Code)
 		})
-
-	request := httptest.NewRequest("GET", "/orders", nil)
-	f.mux.ServeHTTP(f.responseRecorder, request)
-
-	assert.Equal(t, http.StatusMethodNotAllowed, f.responseRecorder.Code)
-}
-
-func TestHttpHandler_GetOrdersInternalError(t *testing.T) {
-	f := setUpHttpHandlerTest(t)
-	f.orders.mockHandler.EXPECT().
-		ServeHTTP(gomock.Any(), gomock.Any()).
-		Do(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
-		})
-
-	request := httptest.NewRequest("GET", "/orders", nil)
-	f.mux.ServeHTTP(f.responseRecorder, request)
-
-	assert.Equal(t, http.StatusInternalServerError, f.responseRecorder.Code)
+	}
 }
