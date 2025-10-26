@@ -30,7 +30,7 @@ func setUpHttpHandlerTest(t *testing.T) httpHandlerFixture {
 	t.Cleanup(ordersServer.Close)
 	mux := newHttpHandlerMux(httpHandlerMuxConfig{
 		logger: logger,
-		orders: server{ordersServer.URL, ordersServer.Client()},
+		orders: serverConfig{ordersServer.URL, ordersServer.Client()},
 	})
 	return httpHandlerFixture{
 		mux:              mux,

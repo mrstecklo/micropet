@@ -11,7 +11,7 @@ func main() {
 	logger := createLogger()
 	handler := newHttpHandlerMux(httpHandlerMuxConfig{
 		logger: logger,
-		orders: server{},
+		orders: serverConfig{},
 	})
 	server := http.Server{
 		Addr:         ":8080",

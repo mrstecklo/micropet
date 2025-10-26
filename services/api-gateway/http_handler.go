@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type server struct {
+type serverConfig struct {
 	url    string
 	client *http.Client
 }
@@ -21,7 +21,7 @@ func (h httpHandlerMux) ServeHTTP(responseWriter http.ResponseWriter, request *h
 
 type httpHandlerMuxConfig struct {
 	logger *slog.Logger
-	orders server
+	orders serverConfig
 }
 
 func newHttpHandlerMux(config httpHandlerMuxConfig) httpHandlerMux {
@@ -32,19 +32,19 @@ func newHttpHandlerMux(config httpHandlerMuxConfig) httpHandlerMux {
 	return httpHandlerMux{mux}
 }
 
-type handleFunc func(*slog.Logger, server, http.ResponseWriter, *http.Request)
+type handleFunc func(*slog.Logger, serverConfig, http.ResponseWriter, *http.Request)
 
 type httpHandler struct {
 	logger *slog.Logger
 	handle handleFunc
-	server server
+	server serverConfig
 }
 
 func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
 	h.handle(h.logger, h.server, responseWriter, request)
 }
 
-func handleOrders(logger *slog.Logger, server server, responseWriter http.ResponseWriter, request *http.Request) {
+func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.ResponseWriter, request *http.Request) {
 	req, _ := http.NewRequest("GET", server.url, nil)
 	resp, _ := server.client.Do(req)
 	responseWriter.WriteHeader(resp.StatusCode)
