@@ -49,6 +49,7 @@ func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.
 	proxyURL, _ := url.Parse(server.url)
 	proxyURL.Path = request.URL.Path
 	req, _ := http.NewRequest(request.Method, proxyURL.String(), request.Body)
+	req.Header = request.Header.Clone()
 	resp, _ := server.client.Do(req)
 	responseWriter.WriteHeader(resp.StatusCode)
 	io.Copy(responseWriter, resp.Body)

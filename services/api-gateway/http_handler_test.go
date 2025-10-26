@@ -187,3 +187,35 @@ func TestHttpHandler_ForwardsRequestBodyToOrders(t *testing.T) {
 		})
 	}
 }
+
+func TestHttpHandler_ForwardsRequestHeaderToOrders(t *testing.T) {
+	f := setUpHttpHandlerTest(t)
+
+	f.orders.mockHandler.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "expected value", r.Header.Get("X-Testing"))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		})
+
+	request := httptest.NewRequest("GET", "/orders", nil)
+	request.Header.Add("X-Testing", "expected value")
+	f.mux.ServeHTTP(f.responseRecorder, request)
+}
+
+func TestHttpHandler_ForwardsOtherRequestHeaderToOrders(t *testing.T) {
+	f := setUpHttpHandlerTest(t)
+
+	f.orders.mockHandler.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "something", r.Header.Get("X-Something"))
+			assert.Equal(t, "quick brown fox", r.Header.Get("X-Foo"))
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		})
+
+	request := httptest.NewRequest("GET", "/orders", nil)
+	request.Header.Add("X-Something", "something")
+	request.Header.Add("X-Foo", "quick brown fox")
+	f.mux.ServeHTTP(f.responseRecorder, request)
+}
