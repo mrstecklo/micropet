@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"log/slog"
 	"net/http"
 )
@@ -45,4 +46,5 @@ func handleOrders(logger *slog.Logger, server server, responseWriter http.Respon
 	req, _ := http.NewRequest("GET", server.url, nil)
 	resp, _ := server.client.Do(req)
 	responseWriter.WriteHeader(resp.StatusCode)
+	io.Copy(responseWriter, resp.Body)
 }

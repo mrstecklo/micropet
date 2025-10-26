@@ -76,6 +76,7 @@ func TestHttpHandler_ReturnsErrorsFromOrders(t *testing.T) {
 			f.mux.ServeHTTP(f.responseRecorder, request)
 
 			assert.Equal(t, d.code, f.responseRecorder.Code)
+			assert.Equal(t, d.body+"\n", f.responseRecorder.Body.String())
 		})
 	}
 }
