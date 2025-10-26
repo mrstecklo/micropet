@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mrstecklo/micropet/services/mock/mock_http"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
@@ -50,9 +51,7 @@ func TestHttpHandler_GetOrdersNotAllowed(t *testing.T) {
 	request := httptest.NewRequest("GET", "/orders", nil)
 	f.mux.ServeHTTP(f.responseRecorder, request)
 
-	if http.StatusMethodNotAllowed != f.responseRecorder.Code {
-		t.Errorf("incorrect code: expected %d, got %d", http.StatusMethodNotAllowed, f.responseRecorder.Code)
-	}
+	assert.Equal(t, http.StatusMethodNotAllowed, f.responseRecorder.Code)
 }
 
 func TestHttpHandler_GetOrdersInternalError(t *testing.T) {
@@ -66,7 +65,5 @@ func TestHttpHandler_GetOrdersInternalError(t *testing.T) {
 	request := httptest.NewRequest("GET", "/orders", nil)
 	f.mux.ServeHTTP(f.responseRecorder, request)
 
-	if http.StatusInternalServerError != f.responseRecorder.Code {
-		t.Errorf("incorrect code: expected %d, got %d", http.StatusInternalServerError, f.responseRecorder.Code)
-	}
+	assert.Equal(t, http.StatusInternalServerError, f.responseRecorder.Code)
 }
