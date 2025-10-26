@@ -1,8 +1,11 @@
 package main
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/mrstecklo/micropet/services/mock/mock_http"
@@ -140,17 +143,46 @@ func TestHttpHandler_ForwardsRequestMethodAndPathToOrders(t *testing.T) {
 	for _, d := range data {
 		t.Run(d.name, func(t *testing.T) {
 			f := setUpHttpHandlerTest(t)
-			requestMatcher := gomock.Cond(func(request *http.Request) bool {
-				return request.Method == d.method && request.URL.Path == d.target
-			})
 
 			f.orders.mockHandler.EXPECT().
-				ServeHTTP(gomock.Any(), requestMatcher).
+				ServeHTTP(gomock.Any(), gomock.Any()).
 				Do(func(w http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, d.method, r.Method)
+					assert.Equal(t, d.target, r.URL.Path)
 					http.Error(w, "Internal server error", http.StatusInternalServerError)
 				})
 
 			request := httptest.NewRequest(d.method, d.target, nil)
+			f.mux.ServeHTTP(f.responseRecorder, request)
+		})
+	}
+}
+
+func TestHttpHandler_ForwardsRequestBodyToOrders(t *testing.T) {
+	data := []struct {
+		body string
+	}{
+		{
+			`{"title": "something"}`,
+		},
+		{
+			`{"title": "ololo"}`,
+		},
+	}
+	for idx, d := range data {
+		t.Run(strconv.Itoa(idx), func(t *testing.T) {
+			f := setUpHttpHandlerTest(t)
+
+			f.orders.mockHandler.EXPECT().
+				ServeHTTP(gomock.Any(), gomock.Any()).
+				Do(func(w http.ResponseWriter, r *http.Request) {
+					bytes, err := io.ReadAll(r.Body)
+					assert.Nil(t, err)
+					assert.Equal(t, d.body, string(bytes))
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+				})
+
+			request := httptest.NewRequest("POST", "/orders", strings.NewReader(d.body))
 			f.mux.ServeHTTP(f.responseRecorder, request)
 		})
 	}

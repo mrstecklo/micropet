@@ -48,7 +48,7 @@ func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http
 func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.ResponseWriter, request *http.Request) {
 	proxyURL, _ := url.Parse(server.url)
 	proxyURL.Path = request.URL.Path
-	req, _ := http.NewRequest(request.Method, proxyURL.String(), nil)
+	req, _ := http.NewRequest(request.Method, proxyURL.String(), request.Body)
 	resp, _ := server.client.Do(req)
 	responseWriter.WriteHeader(resp.StatusCode)
 	io.Copy(responseWriter, resp.Body)
