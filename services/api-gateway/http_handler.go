@@ -4,6 +4,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 )
 
 type serverConfig struct {
@@ -45,7 +46,9 @@ func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http
 }
 
 func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.ResponseWriter, request *http.Request) {
-	req, _ := http.NewRequest("GET", server.url, nil)
+	proxyURL, _ := url.Parse(server.url)
+	proxyURL.Path = request.URL.Path
+	req, _ := http.NewRequest(request.Method, proxyURL.String(), nil)
 	resp, _ := server.client.Do(req)
 	responseWriter.WriteHeader(resp.StatusCode)
 	io.Copy(responseWriter, resp.Body)

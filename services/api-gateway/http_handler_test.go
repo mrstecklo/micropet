@@ -108,3 +108,50 @@ func TestHttpHandler_ReturnsErrorsFromOrders(t *testing.T) {
 		})
 	}
 }
+
+func TestHttpHandler_ForwardsRequestMethodAndPathToOrders(t *testing.T) {
+	data := []struct {
+		name   string
+		method string
+		target string
+	}{
+		{
+			"PostRoot",
+			"POST",
+			"/orders",
+		},
+		{
+			"PostId",
+			"POST",
+			"/orders/111",
+		},
+		{
+			"GetRoot",
+			"GET",
+			"/orders",
+		},
+		{
+			"GetId",
+			"GET",
+			"/orders/111",
+		},
+	}
+
+	for _, d := range data {
+		t.Run(d.name, func(t *testing.T) {
+			f := setUpHttpHandlerTest(t)
+			requestMatcher := gomock.Cond(func(request *http.Request) bool {
+				return request.Method == d.method && request.URL.Path == d.target
+			})
+
+			f.orders.mockHandler.EXPECT().
+				ServeHTTP(gomock.Any(), requestMatcher).
+				Do(func(w http.ResponseWriter, r *http.Request) {
+					http.Error(w, "Internal server error", http.StatusInternalServerError)
+				})
+
+			request := httptest.NewRequest(d.method, d.target, nil)
+			f.mux.ServeHTTP(f.responseRecorder, request)
+		})
+	}
+}
