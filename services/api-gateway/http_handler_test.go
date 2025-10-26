@@ -4,10 +4,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/mrstecklo/micropet/services/mock/mock_http"
+	"go.uber.org/mock/gomock"
 )
 
 type httpHandlerFixtureConfig struct {
-	ordersServerHandler func(http.ResponseWriter, *http.Request)
+	ordersServerHandler http.Handler
 }
 
 type httpHandlerFixture struct {
@@ -18,7 +21,7 @@ type httpHandlerFixture struct {
 
 func setUpHttpHandler(t *testing.T, config httpHandlerFixtureConfig) httpHandlerFixture {
 	logger := createLogger()
-	ordersServer := httptest.NewServer(http.HandlerFunc(config.ordersServerHandler))
+	ordersServer := httptest.NewServer(config.ordersServerHandler)
 	handler := newHttpHandlerMux(httpHandlerMuxConfig{
 		logger: logger,
 		orders: server{ordersServer.URL, ordersServer.Client()},
@@ -32,13 +35,18 @@ func setUpHttpHandler(t *testing.T, config httpHandlerFixtureConfig) httpHandler
 }
 
 func TestHttpHandler_GetOrdersNotAllowed(t *testing.T) {
-	config := httpHandlerFixtureConfig{
-		ordersServerHandler: func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		},
-	}
-	f := setUpHttpHandler(t, config)
+	ctrl := gomock.NewController(t)
+	ordersHandlerMock := mock_http.NewMockHandler(ctrl)
+	f := setUpHttpHandler(t, httpHandlerFixtureConfig{
+		ordersServerHandler: ordersHandlerMock,
+	})
 	request := httptest.NewRequest("GET", "/orders", nil)
+
+	ordersHandlerMock.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		})
 
 	f.handler.ServeHTTP(f.responseRecorder, request)
 
@@ -48,13 +56,18 @@ func TestHttpHandler_GetOrdersNotAllowed(t *testing.T) {
 }
 
 func TestHttpHandler_GetOrdersInternalError(t *testing.T) {
-	config := httpHandlerFixtureConfig{
-		ordersServerHandler: func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Method not allowed", http.StatusInternalServerError)
-		},
-	}
-	f := setUpHttpHandler(t, config)
+	ctrl := gomock.NewController(t)
+	ordersHandlerMock := mock_http.NewMockHandler(ctrl)
+	f := setUpHttpHandler(t, httpHandlerFixtureConfig{
+		ordersServerHandler: ordersHandlerMock,
+	})
 	request := httptest.NewRequest("GET", "/orders", nil)
+
+	ordersHandlerMock.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		})
 
 	f.handler.ServeHTTP(f.responseRecorder, request)
 
