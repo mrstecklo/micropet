@@ -26,7 +26,9 @@ type httpHandlerMuxConfig struct {
 
 func newHttpHandlerMux(config httpHandlerMuxConfig) httpHandlerMux {
 	mux := http.NewServeMux()
-	mux.Handle("/orders", httpHandler{config.logger, handleOrders, config.orders})
+	ordersHandler := httpHandler{config.logger, handleOrders, config.orders}
+	mux.Handle("/orders", ordersHandler)
+	mux.Handle("/orders/", ordersHandler)
 	return httpHandlerMux{mux}
 }
 

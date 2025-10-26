@@ -49,16 +49,44 @@ func TestHttpHandler_ReturnsErrorsFromOrders(t *testing.T) {
 		body   string
 	}{
 		{
-			"GetMethodNotAllowed",
+			"GetRootMethodNotAllowed",
 			"GET",
 			"/orders",
 			http.StatusMethodNotAllowed,
 			"Method not allowed",
 		},
 		{
-			"GetInternalServerError",
+			"GetRootInternalServerError",
 			"GET",
 			"/orders",
+			http.StatusInternalServerError,
+			"Internal server error",
+		},
+		{
+			"GetIdInternalServerError",
+			"GET",
+			"/orders/123",
+			http.StatusInternalServerError,
+			"Internal server error",
+		},
+		{
+			"PostIdMethodNotAllowed",
+			"POST",
+			"/orders/123",
+			http.StatusMethodNotAllowed,
+			"Method not allowed",
+		},
+		{
+			"PostIdInternalServerError",
+			"POST",
+			"/orders/123",
+			http.StatusInternalServerError,
+			"Internal server error",
+		},
+		{
+			"PostRootInternalServerError",
+			"POST",
+			"/orders/123",
 			http.StatusInternalServerError,
 			"Internal server error",
 		},
