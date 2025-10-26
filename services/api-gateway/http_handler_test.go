@@ -219,3 +219,39 @@ func TestHttpHandler_ForwardsOtherRequestHeaderToOrders(t *testing.T) {
 	request.Header.Add("X-Foo", "quick brown fox")
 	f.mux.ServeHTTP(f.responseRecorder, request)
 }
+
+func TestHttpHandler_ReturnsHeaderFromOrders(t *testing.T) {
+	f := setUpHttpHandlerTest(t)
+	f.orders.mockHandler.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("X-Foo", "jackpot")
+			w.WriteHeader(http.StatusCreated)
+			_, err := w.Write([]byte(`{"id": 1, "title": "something"}`))
+			assert.Nil(t, err)
+		})
+
+	request := httptest.NewRequest("POST", "/orders", strings.NewReader(`{"title": "something"}`))
+	f.mux.ServeHTTP(f.responseRecorder, request)
+
+	assert.Equal(t, "jackpot", f.responseRecorder.Header().Get("X-Foo"))
+}
+
+func TestHttpHandler_ReturnsOtherHeaderFromOrders(t *testing.T) {
+	f := setUpHttpHandlerTest(t)
+	f.orders.mockHandler.EXPECT().
+		ServeHTTP(gomock.Any(), gomock.Any()).
+		Do(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("X-Bar", "bazinga")
+			w.Header().Add("X-Fizz", "quantum physics")
+			w.WriteHeader(http.StatusCreated)
+			_, err := w.Write([]byte(`{"id": 1, "title": "something"}`))
+			assert.Nil(t, err)
+		})
+
+	request := httptest.NewRequest("POST", "/orders", strings.NewReader(`{"title": "something"}`))
+	f.mux.ServeHTTP(f.responseRecorder, request)
+
+	assert.Equal(t, "bazinga", f.responseRecorder.Header().Get("X-Bar"))
+	assert.Equal(t, "quantum physics", f.responseRecorder.Header().Get("X-Fizz"))
+}

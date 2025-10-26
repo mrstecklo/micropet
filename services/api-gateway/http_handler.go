@@ -51,6 +51,9 @@ func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.
 	req, _ := http.NewRequest(request.Method, proxyURL.String(), request.Body)
 	req.Header = request.Header.Clone()
 	resp, _ := server.client.Do(req)
+	for key, value := range resp.Header {
+		responseWriter.Header()[key] = value
+	}
 	responseWriter.WriteHeader(resp.StatusCode)
 	io.Copy(responseWriter, resp.Body)
 }
