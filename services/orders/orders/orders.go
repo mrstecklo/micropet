@@ -21,10 +21,16 @@ type Engine struct {
 
 func (e Engine) CreateOrder(title string) (int, error) {
 	id, err := e.database.CreateOrder(title)
-	e.messaging.PublishOrderCreated(Order{
+	if err != nil {
+		return 0, err
+	}
+	err = e.messaging.PublishOrderCreated(Order{
 		ID:    id,
 		Title: title,
 	})
+	if err != nil {
+		return 0, err
+	}
 	return id, err
 }
 

@@ -19,8 +19,16 @@ type ordersEngineFixture struct {
 }
 
 func setUpOrdersEngineTest(t *testing.T) ordersEngineFixture {
+	var dbRecordsCount int
 	mockCtrl := gomock.NewController(t, gomock.WithOverridableExpectations())
 	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
+	databaseMock.EXPECT().
+		CreateOrder(gomock.Any()).
+		DoAndReturn(func(title string) (int, error) {
+			dbRecordsCount += 1
+			return dbRecordsCount, nil
+		}).
+		AnyTimes()
 	messagingMock := orders_mock.NewMockMessagingSystem(mockCtrl)
 	messagingMock.EXPECT().
 		PublishOrderCreated(gomock.Any()).
@@ -108,4 +116,30 @@ func TestOrderEngine_PublishesCreatedOrder(t *testing.T) {
 			_, _ = f.engine.CreateOrder(d.title)
 		})
 	}
+}
+
+func TestOrderEngine_DoesNotPublishOrderOnDatabaseError(t *testing.T) {
+	f := setUpOrdersEngineTest(t)
+	f.databaseMock.EXPECT().
+		CreateOrder(gomock.Any()).
+		Return(0, errors.New("oh, no!"))
+
+	f.messagingMock.EXPECT().
+		PublishOrderCreated(gomock.Any()).
+		Times(0)
+
+	_, _ = f.engine.CreateOrder("someting")
+}
+
+func TestOrderEngine_ReturnsPublishOrderCreatedError(t *testing.T) {
+	f := setUpOrdersEngineTest(t)
+	expectedError := errors.New("failed to publish")
+	f.messagingMock.EXPECT().
+		PublishOrderCreated(gomock.Any()).
+		Return(expectedError)
+
+	_, err := f.engine.CreateOrder("someting")
+
+	assert.Equal(t, expectedError, err)
+	assert.True(t, err == expectedError)
 }
