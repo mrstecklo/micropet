@@ -11,6 +11,25 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type ordersEngineFixture struct {
+	engine       orders.Engine
+	mockCtrl     *gomock.Controller
+	databaseMock *orders_mock.MockDatabase
+}
+
+func setUpOrdersEngineTest(t *testing.T) ordersEngineFixture {
+	mockCtrl := gomock.NewController(t)
+	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
+	engine := orders.NewEngine(orders.Config{
+		Database: databaseMock,
+	})
+	return ordersEngineFixture{
+		engine:       engine,
+		mockCtrl:     mockCtrl,
+		databaseMock: databaseMock,
+	}
+}
+
 func TestOrderEngine_ForwardsCreateOrderToDatabase(t *testing.T) {
 	data := []struct {
 		id    int
@@ -25,17 +44,13 @@ func TestOrderEngine_ForwardsCreateOrderToDatabase(t *testing.T) {
 	}
 	for _, d := range data {
 		t.Run(fmt.Sprint(d), func(t *testing.T) {
-			mockCtrl := gomock.NewController(t)
-			databaseMock := orders_mock.NewMockDatabase(mockCtrl)
-			engine := orders.NewEngine(orders.Config{
-				Database: databaseMock,
-			})
+			f := setUpOrdersEngineTest(t)
 
-			databaseMock.EXPECT().
+			f.databaseMock.EXPECT().
 				CreateOrder(d.title).
 				Return(d.id, nil)
 
-			id, err := engine.CreateOrder(d.title)
+			id, err := f.engine.CreateOrder(d.title)
 
 			assert.Equal(t, d.id, id)
 			assert.Nil(t, err)
@@ -44,17 +59,13 @@ func TestOrderEngine_ForwardsCreateOrderToDatabase(t *testing.T) {
 }
 
 func TestOrderEngine_ReturnsDatabaseCreateOrderError(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
-	engine := orders.NewEngine(orders.Config{
-		Database: databaseMock,
-	})
+	f := setUpOrdersEngineTest(t)
 	expectedError := errors.New("oh, no!")
-	databaseMock.EXPECT().
+	f.databaseMock.EXPECT().
 		CreateOrder(gomock.Any()).
 		Return(0, expectedError)
 
-	_, err := engine.CreateOrder("someting")
+	_, err := f.engine.CreateOrder("someting")
 
 	assert.Equal(t, expectedError, err)
 	assert.True(t, err == expectedError)
