@@ -10,20 +10,27 @@ type Database interface {
 	GetOrder(id int) (Order, error)
 }
 
+type MessagingSystem interface {
+	PublishOrderCreated(order Order) error
+}
+
 type Engine struct {
-	db Database
+	database  Database
+	messaging MessagingSystem
 }
 
 func (e Engine) CreateOrder(title string) (int, error) {
-	return e.db.CreateOrder(title)
+	return e.database.CreateOrder(title)
 }
 
 type Config struct {
-	DB Database
+	Database  Database
+	Messaging MessagingSystem
 }
 
 func NewEngine(config Config) Engine {
 	return Engine{
-		db: config.DB,
+		database:  config.Database,
+		messaging: config.Messaging,
 	}
 }

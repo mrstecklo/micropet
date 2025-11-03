@@ -28,7 +28,7 @@ func TestOrderEngine_ForwardsCreateOrderToDatabase(t *testing.T) {
 			mockCtrl := gomock.NewController(t)
 			databaseMock := orders_mock.NewMockDatabase(mockCtrl)
 			engine := orders.NewEngine(orders.Config{
-				DB: databaseMock,
+				Database: databaseMock,
 			})
 
 			databaseMock.EXPECT().
@@ -47,7 +47,7 @@ func TestOrderEngine_ReturnsDatabaseCreateOrderError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
 	engine := orders.NewEngine(orders.Config{
-		DB: databaseMock,
+		Database: databaseMock,
 	})
 	expectedError := errors.New("oh, no!")
 	databaseMock.EXPECT().
