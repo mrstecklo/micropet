@@ -19,9 +19,13 @@ type ordersEngineFixture struct {
 }
 
 func setUpOrdersEngineTest(t *testing.T) ordersEngineFixture {
-	mockCtrl := gomock.NewController(t)
+	mockCtrl := gomock.NewController(t, gomock.WithOverridableExpectations())
 	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
 	messagingMock := orders_mock.NewMockMessagingSystem(mockCtrl)
+	messagingMock.EXPECT().
+		PublishOrderCreated(gomock.Any()).
+		Return(nil).
+		AnyTimes()
 	engine := orders.NewEngine(orders.Config{
 		Database:  databaseMock,
 		Messaging: messagingMock,
@@ -73,4 +77,35 @@ func TestOrderEngine_ReturnsDatabaseCreateOrderError(t *testing.T) {
 
 	assert.Equal(t, expectedError, err)
 	assert.True(t, err == expectedError)
+}
+
+func TestOrderEngine_PublishesCreatedOrder(t *testing.T) {
+	data := []struct {
+		id    int
+		title string
+	}{
+		{
+			1, "some title",
+		},
+		{
+			1421, "duckling",
+		},
+	}
+	for _, d := range data {
+		t.Run(fmt.Sprint(d), func(t *testing.T) {
+			f := setUpOrdersEngineTest(t)
+			f.databaseMock.EXPECT().
+				CreateOrder(gomock.Any()).
+				Return(d.id, nil)
+
+			f.messagingMock.EXPECT().
+				PublishOrderCreated(orders.Order{
+					ID:    d.id,
+					Title: d.title,
+				}).
+				Return(nil)
+
+			_, _ = f.engine.CreateOrder(d.title)
+		})
+	}
 }

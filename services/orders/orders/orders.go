@@ -20,7 +20,12 @@ type Engine struct {
 }
 
 func (e Engine) CreateOrder(title string) (int, error) {
-	return e.database.CreateOrder(title)
+	id, err := e.database.CreateOrder(title)
+	e.messaging.PublishOrderCreated(Order{
+		ID:    id,
+		Title: title,
+	})
+	return id, err
 }
 
 type Config struct {
