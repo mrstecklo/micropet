@@ -46,14 +46,40 @@ func (h httpHandler) ServeHTTP(responseWriter http.ResponseWriter, request *http
 }
 
 func handleOrders(logger *slog.Logger, server serverConfig, responseWriter http.ResponseWriter, request *http.Request) {
-	proxyURL, _ := url.Parse(server.url)
+	logger.Info("handle orders", "method", request.Method, "url", request.URL.String())
+	proxyURL, err := url.Parse(server.url)
+	if err != nil {
+		logger.Error("failed to parse url", "error", err.Error(), "url", server.url)
+		http.Error(responseWriter, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 	proxyURL.Path = request.URL.Path
-	req, _ := http.NewRequest(request.Method, proxyURL.String(), request.Body)
-	req.Header = request.Header.Clone()
-	resp, _ := server.client.Do(req)
-	for key, value := range resp.Header {
+	proxyRequest, err := http.NewRequest(request.Method, proxyURL.String(), request.Body)
+	if err != nil {
+		logger.Error("failed to create http request", "error", err.Error(), "method", request.Method, "url", proxyURL.String())
+		http.Error(responseWriter, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	proxyRequest.Header = request.Header.Clone()
+	proxyResponse, err := server.client.Do(proxyRequest)
+	if err != nil {
+		logger.Error("failed to send http request", "error", err.Error(), "method", request.Method, "url", proxyURL.String())
+		http.Error(responseWriter, "Service unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	defer func() {
+		err := proxyResponse.Body.Close()
+		if err != nil {
+			logger.Error("failed to close response body", "error", err.Error())
+		}
+	}()
+
+	for key, value := range proxyResponse.Header {
 		responseWriter.Header()[key] = value
 	}
-	responseWriter.WriteHeader(resp.StatusCode)
-	io.Copy(responseWriter, resp.Body)
+	responseWriter.WriteHeader(proxyResponse.StatusCode)
+	_, err = io.Copy(responseWriter, proxyResponse.Body)
+	if err != nil {
+		logger.Error("failed to copy response body", "error", err.Error())
+	}
 }
