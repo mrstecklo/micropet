@@ -12,21 +12,25 @@ import (
 )
 
 type ordersEngineFixture struct {
-	engine       orders.Engine
-	mockCtrl     *gomock.Controller
-	databaseMock *orders_mock.MockDatabase
+	engine        orders.Engine
+	mockCtrl      *gomock.Controller
+	databaseMock  *orders_mock.MockDatabase
+	messagingMock *orders_mock.MockMessagingSystem
 }
 
 func setUpOrdersEngineTest(t *testing.T) ordersEngineFixture {
 	mockCtrl := gomock.NewController(t)
 	databaseMock := orders_mock.NewMockDatabase(mockCtrl)
+	messagingMock := orders_mock.NewMockMessagingSystem(mockCtrl)
 	engine := orders.NewEngine(orders.Config{
-		Database: databaseMock,
+		Database:  databaseMock,
+		Messaging: messagingMock,
 	})
 	return ordersEngineFixture{
-		engine:       engine,
-		mockCtrl:     mockCtrl,
-		databaseMock: databaseMock,
+		engine:        engine,
+		mockCtrl:      mockCtrl,
+		databaseMock:  databaseMock,
+		messagingMock: messagingMock,
 	}
 }
 
