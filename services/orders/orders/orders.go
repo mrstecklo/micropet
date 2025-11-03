@@ -15,8 +15,7 @@ type Engine struct {
 }
 
 func (e Engine) CreateOrder(title string) (int, error) {
-	id, _ := e.db.CreateOrder(title)
-	return id, nil
+	return e.db.CreateOrder(title)
 }
 
 type Config struct {

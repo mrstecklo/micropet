@@ -50,6 +50,7 @@ func TestOrderEngine_ReturnsDatabaseCreateOrderError(t *testing.T) {
 		DB: databaseMock,
 	})
 	expectedError := errors.New("oh, no!")
+
 	databaseMock.EXPECT().
 		CreateOrder(gomock.Any()).
 		Return(0, expectedError)
