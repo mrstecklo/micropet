@@ -5,6 +5,7 @@
 *.dylib
 *.test
 *.out
+*.bak
 coverage.*
 *.coverprofile
 profile.cov
